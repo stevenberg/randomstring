@@ -18,7 +18,7 @@ int main(int argc, char **argv)
             length = strtol(optarg, NULL, 10);
             break;
         case 's':
-            isvalid = isprint;
+            isvalid = isgraph;
             break;
         case ':':
         case '?':
