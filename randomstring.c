@@ -1,30 +1,54 @@
+#include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <string.h>
+#include <unistd.h>
 
-int main(int argc, char *argv[])
+void usage(const char *);
+
+int main(int argc, char **argv)
 {
-    if (argc < 2 || !isdigit(argv[1][0])) {
-        fprintf(stderr, "usage: %s LENGTH [-s]\n", argv[0]);
+    int (*isvalid)(int) = isalnum;
+    long length = -1;
+    int c;
+    while ((c = getopt(argc, argv, ":l:s")) != -1) {
+        switch (c) {
+        case 'l':
+            length = strtol(optarg, NULL, 10);
+            break;
+        case 's':
+            isvalid = isprint;
+            break;
+        case ':':
+        case '?':
+            usage(argv[0]);
+        }
+    }
+
+    if (length < 1)
+        usage(argv[0]);
+
+    FILE *fp = fopen("/dev/urandom", "rb");
+    if (fp == NULL) {
+        perror("Error opening /dev/urandom");
         exit(EXIT_FAILURE);
     }
-    char *all =
-        "~`!@#$%^&*()-_=+[{}]\\|,<.>/?"
-        "abcdefghijklmnopqrstuvwxyz"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "0123456789";
-    char *characters;
-    if (argc > 2 && !strcmp(argv[2], "-s"))
-        characters = all;
-    else
-        characters = strchr(all, 'a');
-    int length = strlen(characters);
-    int counter = atoi(argv[1]);
-    unsigned int indexes[counter];
-    FILE *fp = fopen("/dev/urandom", "r");
-    fread(&indexes, sizeof(*indexes), counter, fp);
-    fclose(fp);
-    while (counter--) putchar(characters[indexes[counter] % length]);
+
+    while (length) {
+        int c = getc(fp);
+        if (isvalid(c)) {
+            putchar(c);
+            length--;
+        }
+    }
     putchar('\n');
+
+    fclose(fp);
+}
+
+void usage(const char *progname)
+{
+    fprintf(stderr, "Usage: %s -l LENGTH [-s]\n", progname);
+    exit(EXIT_FAILURE);
 }
